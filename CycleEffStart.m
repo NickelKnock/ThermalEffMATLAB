@@ -1,4 +1,4 @@
-% MATLAB script for Rankine cycle with perfect isentropic efficiency, reheating, and dynamically calculated feedwater mass extraction
+% MATLAB script for Rankine cycle with 2 closed FWHs, perfect isentropic efficiency, reheating, and dynamically calculated feedwater mass extraction
 
 % Define known conditions
 P_boiler = 85; % Boiler pressure in bar
@@ -19,6 +19,14 @@ s1 = XSteam('s_pT', P_boiler, T_boiler); % Entropy at boiler output
 h2s = XSteam('h_ps', P_intermediate, s1); % Isentropic expansion to intermediate pressure
 h2 = h2s; % Perfect isentropic efficiency, so actual enthalpy = isentropic enthalpy
 
+% First closed feedwater heater (FWH1) energy balance
+P_fwh1 = P_intermediate; % Pressure of FWH1
+h_fw1_in = XSteam('hL_p', P_cond); % Enthalpy of feedwater entering FWH1 from condenser
+h_fw1_out = XSteam('hL_p', P_fwh1); % Enthalpy of feedwater leaving FWH1 at P_fwh1
+
+% Mass flow extraction for FWH1
+m_extracted_1 = (h_fw1_out - h_fw1_in) / (h2 - h_fw1_in); % Extraction mass flow ratio for FWH1
+
 % Reheat after HPT (state 3)
 h3 = XSteam('h_pT', P_intermediate, T_reheat); % Reheat to original temperature
 s3 = XSteam('s_pT', P_intermediate, T_reheat); % Entropy after reheating
@@ -27,8 +35,16 @@ s3 = XSteam('s_pT', P_intermediate, T_reheat); % Entropy after reheating
 h4s = XSteam('h_ps', P_low, s3); % Isentropic expansion to low-pressure turbine
 h4 = h4s; % Perfect isentropic efficiency
 
+% Second closed feedwater heater (FWH2) energy balance
+P_fwh2 = P_low; % Pressure of FWH2
+h_fw2_in = h_fw1_out; % Feedwater entering FWH2 comes from FWH1
+h_fw2_out = XSteam('hL_p', P_fwh2); % Enthalpy of feedwater leaving FWH2 at P_fwh2
+
+% Mass flow extraction for FWH2
+m_extracted_2 = (h_fw2_out - h_fw2_in) / (h4 - h_fw2_in); % Extraction mass flow ratio for FWH2
+
 % Reheat after IPT (state 5)
-h5 = XSteam('h_pT', P_low, T_reheat); % Reheat to the original temperature
+h5 = XSteam('h_pT', P_low, T_reheat); % Reheat to original temperature
 s5 = XSteam('s_pT', P_low, T_reheat); % Entropy after reheating
 
 % Low-Pressure Turbine (LPT) output (state 6)
@@ -43,23 +59,24 @@ s7 = XSteam('sL_p', P_cond); % Entropy at saturated liquid state
 h8s = XSteam('h_ps', P_boiler, s7); % Isentropic pump compression
 h8 = h8s; % Perfect isentropic efficiency
 
-% Feedwater heater energy balance (mass flow extraction)
-h_fw_out = XSteam('hL_p', P_boiler); % Enthalpy of feedwater after heating
-h_fw_in = h8; % Enthalpy of feedwater before entering the heater
-m_ratio = (h_fw_out - h8) / (h1 - h_fw_in); % Calculate the mass flow extraction for feedwater heater
+% Heat addition after the feedwater heaters (boiler heat)
+% Adjust boiler heat addition based on mass flow after FWHs
+Q_in = (1 - m_extracted_1 - m_extracted_2) * (h1 - h_fw2_out) + (h3 - h2) + (h5 - h4); % Boiler heat with 2 FWHs
 
-% Calculate boiler heat addition and net specific work
-Q_in = (1 - m_ratio) * (h1 - h8) + (h3 - h2) + (h5 - h4); % Heat added in the boiler and reheaters
-W_turbine_total = (h1 - h2) + (h3 - h4) + (h5 - h6); % Total work done by all three turbine stages
+% Turbine work calculation
+W_turbine_total = (h1 - h2) + (h3 - h4) + (h5 - h6); % Total work done by turbines
+
+% Pump work
 W_pump = h8 - h7; % Work required by the pump
-W_net = W_turbine_total - W_pump; % Net work
+W_net = W_turbine_total - W_pump; % Net work output
 
-% Cycle efficiency
+% Cycle efficiency calculation
 efficiency = W_net / Q_in;
 
 % Display results
-fprintf('Cycle efficiency (with reheat and low-pressure turbine): %.2f%%\n', efficiency * 100);
-fprintf('Mass flow extraction to feedwater heater: %.2f kg/s\n', m_ratio);
+fprintf('Cycle efficiency with 2 closed FWHs: %.2f%%\n', efficiency * 100);
+fprintf('Mass flow extraction to FWH1: %.2f kg/s\n', m_extracted_1);
+fprintf('Mass flow extraction to FWH2: %.2f kg/s\n', m_extracted_2);
 fprintf('Total turbine work: %.2f kJ/kg\n', W_turbine_total);
 fprintf('Pump work: %.2f kJ/kg\n', W_pump);
 fprintf('Net work: %.2f kJ/kg\n', W_net);
