@@ -1,10 +1,10 @@
 % MATLAB script for Rankine cycle with 2 closed FWHs, perfect isentropic efficiency, reheating, and dynamically calculated feedwater mass extraction
 
 % Define known conditions
-P_boiler = 85; % Boiler pressure in bar
+P_boiler = 55; % Boiler pressure in bar
 T_boiler = 300; % Boiler temperature in Celsius
-P_intermediate = 55; % Intermediate pressure in bar (after first turbine)
-P_low = 30; % Low-pressure turbine inlet pressure in bar (after intermediate-pressure turbine)
+P_intermediate = 45; % Intermediate pressure in bar (after first turbine)
+P_low = 35; % Low-pressure turbine inlet pressure in bar (after intermediate-pressure turbine)
 T_reheat = 300; % Reheat temperature in Celsius
 
 % Variable Condenser Temperature (T_cond) and corresponding pressure
